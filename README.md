@@ -1,7 +1,7 @@
 go_flag
 =======
 
-**Struct-Based Interface To The Standard Go Flag Package **
+**Struct-Based Interface To The Standard Go Flag Package**
 
 
 ABOUT
