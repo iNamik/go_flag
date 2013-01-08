@@ -9,7 +9,11 @@ Below is an example that shows all of the currently supported flag types
 
 	package main
 
-	import ("fmt"; "time"; "github.com/inamik/go_flag")
+	import (
+		"fmt"
+		"github.com/inamik/go_flag"
+		"time"
+	)
 
 	type flag_t struct {
 		myBool     bool          `name:"bool"     usage: a bool"`
@@ -24,7 +28,7 @@ Below is an example that shows all of the currently supported flag types
 
 	func main() {
 		// Create an instance to store the flags, and set some default values
-		flags := &flag_t{true, -1, -2, 1, 2, 3.14, "hello, world", 1000000000*(60*60*24)}
+		flags := &flag_t{true, -1, -2, 1, 2, 3.14, "hello, world", 1000000000 * (60 * 60 * 24)}
 		args, err := flag.Parse(flags)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
@@ -39,8 +43,8 @@ import (
 	"errors"
 	goflag "flag"
 	"fmt"
-	"reflect"
 	"os"
+	"reflect"
 	"time"
 	"unsafe"
 )
@@ -67,7 +71,7 @@ func Parse(flags interface{}) ([]string, error) {
 // NewFlagSet creates a new flag.FlagSet from the fields and tags of the
 // specified struct
 func NewFlagSet(flags interface{}, errorHandling goflag.ErrorHandling) (*goflag.FlagSet, error) {
-	ptrValue := reflect.ValueOf(flags);
+	ptrValue := reflect.ValueOf(flags)
 	if ptrValue.Kind() != reflect.Ptr {
 		return nil, errors.New("Parameter 'flags' must be pointer to struct")
 	}
@@ -79,16 +83,16 @@ func NewFlagSet(flags interface{}, errorHandling goflag.ErrorHandling) (*goflag.
 
 	flagSet := goflag.NewFlagSet(os.Args[0], errorHandling)
 
-	for i, n := 0, structType.NumField(); i < n ; i++ {
+	for i, n := 0, structType.NumField(); i < n; i++ {
 		fieldMeta := structType.Field(i)
-		tags      := fieldMeta.Tag
-		flagName  := tags.Get("name")
+		tags := fieldMeta.Tag
+		flagName := tags.Get("name")
 		flagUsage := tags.Get("usage")
 
 		// Only process fields with flag names
 		if flagName != "" {
-			field     := structValue.Field(i)
-			fieldPkg  := field.Type().PkgPath()
+			field := structValue.Field(i)
+			fieldPkg := field.Type().PkgPath()
 			fieldType := field.Type().Name()
 			fieldKind := field.Kind()
 
@@ -103,52 +107,52 @@ func NewFlagSet(flags interface{}, errorHandling goflag.ErrorHandling) (*goflag.
 			//fmt.Printf("field[%d]: fieldName:'%s' pkg:'%s' kind:'%s' type:'%s' fullType='%s' flagName:'%s' flagUsage:'%s'\n", i, fieldMeta.Name, fieldPkg, fieldKind.String(), fieldType, fullType, flagName, flagUsage)
 
 			switch fullType {
-				case "bool":
+			case "bool":
 				{
 					boolVal := field.Bool()
 					boolPtr := (*bool)(unsafe.Pointer(field.Addr().Pointer()))
 					flagSet.BoolVar(boolPtr, flagName, boolVal, flagUsage)
 				}
-				case "int":
+			case "int":
 				{
 					intVal := (int)(field.Int())
 					intPtr := (*int)(unsafe.Pointer(field.Addr().Pointer()))
 					flagSet.IntVar(intPtr, flagName, intVal, flagUsage)
 				}
-				case "int64":
+			case "int64":
 				{
 					int64Val := field.Int()
 					int64Ptr := (*int64)(unsafe.Pointer(field.Addr().Pointer()))
 					flagSet.Int64Var(int64Ptr, flagName, int64Val, flagUsage)
 				}
-				case "uint":
+			case "uint":
 				{
 					uintVal := (uint)(field.Uint())
 					uintPtr := (*uint)(unsafe.Pointer(field.Addr().Pointer()))
 					flagSet.UintVar(uintPtr, flagName, uintVal, flagUsage)
 				}
-				case "uint64":
+			case "uint64":
 				{
 					uint64Val := field.Uint()
 					uint64Ptr := (*uint64)(unsafe.Pointer(field.Addr().Pointer()))
 					flagSet.Uint64Var(uint64Ptr, flagName, uint64Val, flagUsage)
 				}
-				case "float64":
+			case "float64":
 				{
 					float64Val := field.Float()
 					float64Ptr := (*float64)(unsafe.Pointer(field.Addr().Pointer()))
 					flagSet.Float64Var(float64Ptr, flagName, float64Val, flagUsage)
 				}
-				case "string":
-					strVal := (field.String())
-					strPtr := (*string)(unsafe.Pointer(field.Addr().Pointer()))
-					flagSet.StringVar(strPtr, flagName, strVal, flagUsage)
-				case "time.Duration":
-					durationVal := time.Duration(field.Int())
-					durationPtr := (*time.Duration)(unsafe.Pointer(field.Addr().Pointer()))
-					flagSet.DurationVar(durationPtr, flagName, durationVal, flagUsage)
-				default:
-					return nil, errors.New(fmt.Sprintf("Field '%s' has unsupported type '%s'", fieldMeta.Name, fieldKind))
+			case "string":
+				strVal := (field.String())
+				strPtr := (*string)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.StringVar(strPtr, flagName, strVal, flagUsage)
+			case "time.Duration":
+				durationVal := time.Duration(field.Int())
+				durationPtr := (*time.Duration)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.DurationVar(durationPtr, flagName, durationVal, flagUsage)
+			default:
+				return nil, errors.New(fmt.Sprintf("Field '%s' has unsupported type '%s'", fieldMeta.Name, fieldKind))
 			}
 		}
 	}

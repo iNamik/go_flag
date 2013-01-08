@@ -1,7 +1,7 @@
 go_flag
 =======
 
-**struct-based interface to the standard Go flag package**
+**Struct-Based Interface To The Standard Go Flag Package **
 
 
 ABOUT
@@ -21,7 +21,11 @@ Below is an example that shows all of the currently supported flag types
 
 	package main
 
-	import ("fmt"; "time"; "github.com/inamik/go_flag")
+	import (
+		"fmt"
+		"github.com/inamik/go_flag"
+		"time"
+	)
 
 	type flag_t struct {
 		myBool     bool          `name:"bool"     usage: a bool"`
@@ -36,7 +40,7 @@ Below is an example that shows all of the currently supported flag types
 
 	func main() {
 		// Create an instance to store the flags, and set some default values
-		flags := &flag_t{true, -1, -2, 1, 2, 3.14, "hello, world", 1000000000*(60*60*24)}
+		flags := &flag_t{true, -1, -2, 1, 2, 3.14, "hello, world", 1000000000 * (60 * 60 * 24)}
 		args, err := flag.Parse(flags)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
