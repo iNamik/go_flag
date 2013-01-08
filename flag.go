@@ -16,7 +16,7 @@ Below is an example that shows all of the currently supported flag types
 	)
 
 	type flag_t struct {
-		myBool     bool          `name:"bool"     usage: a bool"`
+		myBool     bool          `name:"bool"     usage:"a bool"`
 		myInt      int           `name:"int"      usage:"an int"`
 		myInt64    int64         `name:"int64"    usage:"an int64"`
 		myUint     uint          `name:"uint"     usage:"an uint"`
