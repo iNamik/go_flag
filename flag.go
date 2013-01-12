@@ -5,37 +5,15 @@ interface to the standard Go flag package.
 We define a struct to store the flag values, and use struct tags to define the
 flag parameters.
 
-Below is an example that shows all of the currently supported flag types
+Maps (map[string]string) and Arrays ([]string) are supported via flags that
+can be used multiple times (i.e. -map key1=value1 -map key2=value2)
 
-	package main
+Custom types can be used as long as they implement the Go flag.Value interface.
 
-	import (
-		"fmt"
-		"github.com/inamik/go_flag"
-		"time"
-	)
-
-	type flag_t struct {
-		myBool     bool          `name:"bool"     usage:"a bool"`
-		myInt      int           `name:"int"      usage:"an int"`
-		myInt64    int64         `name:"int64"    usage:"an int64"`
-		myUint     uint          `name:"uint"     usage:"an uint"`
-		myUint64   uint64        `name:"uint64"   usage:"an uint64"`
-		myFloat64  float64       `name:"float64"  usage:"a float64"`
-		myString   string        `name:"string"   usage:"a string"`
-		myDuration time.Duration `name:"duration" usage:"a duration, such as '300ms', '-1.5h' or '2h45m'. Valid time units are 'ns', 'us' (or 'µs'), 'ms', 's', 'm', 'h'."`
-	}
-
-	func main() {
-		// Create an instance to store the flags, and set some default values
-		flags := &flag_t{true, -1, -2, 1, 2, 3.14, "hello, world", 1000000000 * (60 * 60 * 24)}
-		args, err := flag.Parse(flags)
-		if err != nil {
-			fmt.Printf("Error: %s\n", err.Error())
-		} else {
-			fmt.Printf("opts = %v\nargs = %v\n", flags, args)
-		}
-	}
+see examples/flags for an example that shows all of the currently supported
+flag types, including support for Maps (map[string][string] and map[string]int),
+Arrays ([]string and []int), as well as custom types that implement the
+Go flag.Value interface.
 */
 package flag
 
@@ -49,9 +27,15 @@ import (
 	"unsafe"
 )
 
-// Parse processes command-line flags according to the fields and tags of
-// the specified struct.
+// Parse processes command-line args (os.Args) according to the fields and tags
+// of the specified flags struct.
 func Parse(flags interface{}) ([]string, error) {
+	return ParseArgs(flags, os.Args[1:])
+}
+
+// ParseArgs processes the specified args according to the fields and tags
+// of the specified flags struct.
+func ParseArgs(flags interface{}, args []string) ([]string, error) {
 
 	flagSet, err := NewFlagSet(flags, goflag.ExitOnError)
 
@@ -59,7 +43,7 @@ func Parse(flags interface{}) ([]string, error) {
 		return nil, err
 	}
 
-	err = flagSet.Parse(os.Args[1:])
+	err = flagSet.Parse(args)
 
 	if err != nil {
 		return nil, err
@@ -69,7 +53,7 @@ func Parse(flags interface{}) ([]string, error) {
 }
 
 // NewFlagSet creates a new flag.FlagSet from the fields and tags of the
-// specified struct
+// specified flags struct.
 func NewFlagSet(flags interface{}, errorHandling goflag.ErrorHandling) (*goflag.FlagSet, error) {
 	ptrValue := reflect.ValueOf(flags)
 	if ptrValue.Kind() != reflect.Ptr {
@@ -92,57 +76,35 @@ func NewFlagSet(flags interface{}, errorHandling goflag.ErrorHandling) (*goflag.
 		// Only process fields with flag names
 		if flagName != "" {
 			field := structValue.Field(i)
-			fieldPkg := field.Type().PkgPath()
-			fieldType := field.Type().Name()
-			fieldKind := field.Kind()
+			fieldType := field.Type()
 
-			var fullType string
+			//fmt.Printf("field[%d]: fieldName:'%s' pkg:'%s' kind:'%s' typeName:'%s' typeString:'%s' flagName:'%s' flagUsage:'%s'\n", i, fieldMeta.Name, field.Type().PkgPath(), field.Kind().String(), fieldType.Name(), fieldType.String(), flagName, flagUsage)
 
-			if fieldPkg == "" {
-				fullType = fieldType
-			} else {
-				fullType = fmt.Sprintf("%s.%s", fieldPkg, fieldType)
-			}
-
-			//fmt.Printf("field[%d]: fieldName:'%s' pkg:'%s' kind:'%s' type:'%s' fullType='%s' flagName:'%s' flagUsage:'%s'\n", i, fieldMeta.Name, fieldPkg, fieldKind.String(), fieldType, fullType, flagName, flagUsage)
-
-			switch fullType {
+			switch fieldType.String() {
 			case "bool":
-				{
-					boolVal := field.Bool()
-					boolPtr := (*bool)(unsafe.Pointer(field.Addr().Pointer()))
-					flagSet.BoolVar(boolPtr, flagName, boolVal, flagUsage)
-				}
+				boolVal := field.Bool()
+				boolPtr := (*bool)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.BoolVar(boolPtr, flagName, boolVal, flagUsage)
 			case "int":
-				{
-					intVal := (int)(field.Int())
-					intPtr := (*int)(unsafe.Pointer(field.Addr().Pointer()))
-					flagSet.IntVar(intPtr, flagName, intVal, flagUsage)
-				}
+				intVal := (int)(field.Int())
+				intPtr := (*int)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.IntVar(intPtr, flagName, intVal, flagUsage)
 			case "int64":
-				{
-					int64Val := field.Int()
-					int64Ptr := (*int64)(unsafe.Pointer(field.Addr().Pointer()))
-					flagSet.Int64Var(int64Ptr, flagName, int64Val, flagUsage)
-				}
+				int64Val := field.Int()
+				int64Ptr := (*int64)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.Int64Var(int64Ptr, flagName, int64Val, flagUsage)
 			case "uint":
-				{
-					uintVal := (uint)(field.Uint())
-					uintPtr := (*uint)(unsafe.Pointer(field.Addr().Pointer()))
-					flagSet.UintVar(uintPtr, flagName, uintVal, flagUsage)
-				}
+				uintVal := (uint)(field.Uint())
+				uintPtr := (*uint)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.UintVar(uintPtr, flagName, uintVal, flagUsage)
 			case "uint64":
-				{
-					uint64Val := field.Uint()
-					uint64Ptr := (*uint64)(unsafe.Pointer(field.Addr().Pointer()))
-					flagSet.Uint64Var(uint64Ptr, flagName, uint64Val, flagUsage)
-				}
+				uint64Val := field.Uint()
+				uint64Ptr := (*uint64)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.Uint64Var(uint64Ptr, flagName, uint64Val, flagUsage)
 			case "float64":
-				{
-					float64Val := field.Float()
-					float64Ptr := (*float64)(unsafe.Pointer(field.Addr().Pointer()))
-					flagSet.Float64Var(float64Ptr, flagName, float64Val, flagUsage)
-				}
+				float64Val := field.Float()
+				float64Ptr := (*float64)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.Float64Var(float64Ptr, flagName, float64Val, flagUsage)
 			case "string":
 				strVal := (field.String())
 				strPtr := (*string)(unsafe.Pointer(field.Addr().Pointer()))
@@ -151,8 +113,28 @@ func NewFlagSet(flags interface{}, errorHandling goflag.ErrorHandling) (*goflag.
 				durationVal := time.Duration(field.Int())
 				durationPtr := (*time.Duration)(unsafe.Pointer(field.Addr().Pointer()))
 				flagSet.DurationVar(durationPtr, flagName, durationVal, flagUsage)
+			case "map[string]string":
+				mapPtr := (*map[string]string)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.Var(NewStringMapValue(mapPtr), flagName, flagUsage)
+			case "map[string]int":
+				mapPtr := (*map[string]int)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.Var(NewIntMapValue(mapPtr), flagName, flagUsage)
+			case "[]string":
+				arrayPtr := (*[]string)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.Var(NewStringArrayValue(arrayPtr), flagName, flagUsage)
+			case "[]int":
+				arrayPtr := (*[]int)(unsafe.Pointer(field.Addr().Pointer()))
+				flagSet.Var(NewIntArrayValue(arrayPtr), flagName, flagUsage)
 			default:
-				return nil, errors.New(fmt.Sprintf("Field '%s' has unsupported type '%s'", fieldMeta.Name, fieldKind))
+				// If type implements *flag.Value then use setVar()
+				if field.Type().Implements(reflect.TypeOf((*goflag.Value)(nil)).Elem()) {
+					flagSet.Var(field.Interface().(goflag.Value), flagName, flagUsage)
+					// If pointer to type implements *flag.Value then use setVar()
+				} else if field.Addr().Type().Implements(reflect.TypeOf((*goflag.Value)(nil)).Elem()) {
+					flagSet.Var(field.Addr().Interface().(goflag.Value), flagName, flagUsage)
+				} else {
+					return nil, errors.New(fmt.Sprintf("Field '%s' has unsupported type '%s' which does not implement flag.Value", fieldMeta.Name, fieldType.String()))
+				}
 			}
 		}
 	}
